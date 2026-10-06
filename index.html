@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pelaporan Keuangan Beasiswa KIP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50/50 text-slate-800 font-sans min-h-screen flex flex-col pb-24 md:pb-8">
+
+    <!-- Navbar -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-brand-400 text-white p-2 rounded-xl shadow-sm">
+                    <i class="fa-solid fa-graduation-cap text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base md:text-lg leading-tight text-slate-900">KIP FinTrack</h1>
+                    <p class="text-[10px] md:text-xs text-slate-500 font-medium">Laporan Keuangan Mahasiswa</p>
+                </div>
+            </div>
+            <button onclick="window.openModal()" class="hidden md:flex bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm items-center gap-2">
+                <i class="fa-solid fa-plus"></i> Tambah Transaksi
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+        
+        <!-- Main Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100/80 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 mb-1">Sisa Saldo</p>
+                    <h3 id="totalBalance" class="text-2xl font-bold text-brand-600 tracking-tight">Rp 0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 md:col-span-2">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100/80">
+                    <div class="flex items-center gap-2 mb-2 text-emerald-600">
+                        <div class="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center"><i class="fa-solid fa-arrow-down text-[10px]"></i></div>
+                        <p class="text-xs font-medium text-slate-500">Uang Masuk</p>
+                    </div>
+                    <h3 id="totalIncome" class="text-lg font-bold text-slate-800">Rp 0</h3>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100/80">
+                    <div class="flex items-center gap-2 mb-2 text-rose-600">
+                        <div class="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center"><i class="fa-solid fa-arrow-up text-[10px]"></i></div>
+                        <p class="text-xs font-medium text-slate-500">Uang Keluar</p>
+                    </div>
+                    <h3 id="totalExpense" class="text-lg font-bold text-slate-800">Rp 0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recap Categories Feature -->
+        <div>
+            <h2 class="font-bold text-slate-800 text-sm md:text-base mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-brand-500"></i> Rekap Kategori
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                    <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Beasiswa KIP</p>
+                    <h4 id="rekapKip" class="text-sm md:text-base font-bold text-emerald-600">Rp 0</h4>
+                </div>
+                <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                    <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Biaya UKT</p>
+                    <h4 id="rekapUkt" class="text-sm md:text-base font-bold text-rose-500">Rp 0</h4>
+                </div>
+                <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                    <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Living Cost</p>
+                    <h4 id="rekapLiving" class="text-sm md:text-base font-bold text-orange-500">Rp 0</h4>
+                </div>
+                <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+                    <p class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Buku</p>
+                    <h4 id="rekapBuku" class="text-sm md:text-base font-bold text-indigo-500">Rp 0</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-slate-800 text-sm md:text-base">Grafik Pengeluaran</h2>
+                </div>
+                <div class="relative w-full h-[200px] md:h-[250px]">
+                    <canvas id="dailyExpenseChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <h2 class="font-bold text-slate-800 mb-2 text-sm md:text-base text-center">Arus Kas</h2>
+                <div class="relative w-full h-[180px] md:h-[220px] flex items-center justify-center">
+                    <canvas id="ratioChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 md:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h2 class="font-bold text-slate-800 text-sm md:text-base">Riwayat Transaksi</h2>
+                <div class="flex items-center gap-2 w-full sm:w-auto bg-slate-50 p-1 rounded-xl border border-slate-200">
+                    <select id="filterSemester" onchange="window.renderApp()" class="bg-transparent text-slate-700 font-medium text-xs md:text-sm px-3 py-1.5 w-full sm:w-auto outline-none appearance-none cursor-pointer text-center">
+                        <option value="ALL">Semua Semester</option>
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3">Semester 3</option>
+                        <option value="4">Semester 4</option>
+                        <option value="5">Semester 5</option>
+                        <option value="6">Semester 6</option>
+                        <option value="7">Semester 7</option>
+                        <option value="8">Semester 8</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 pr-3 pointer-events-none"></i>
+                </div>
+            </div>
+            
+            <div class="block md:hidden p-4 space-y-3" id="mobileTxList"></div>
+
+            <div class="hidden md:block overflow-x-auto no-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-100">
+                            <th class="py-3 px-5 font-semibold">Tanggal</th>
+                            <th class="py-3 px-5 font-semibold">Kategori</th>
+                            <th class="py-3 px-5 font-semibold text-right">Nominal</th>
+                            <th class="py-3 px-5 font-semibold text-center">Bukti</th>
+                            <th class="py-3 px-5 font-semibold text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center p-10 text-center">
+                <div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3 text-xl">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <h3 class="text-slate-700 font-semibold text-sm mb-1">Belum ada transaksi</h3>
+                <p class="text-slate-400 text-xs max-w-[200px]">Mulai catat uang masuk dan pengeluaran Anda.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Floating Action Button -->
+    <button onclick="window.openModal()" class="md:hidden fixed bottom-6 right-6 bg-brand-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl z-40 hover:bg-brand-500 active:scale-95 transition-all">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Add Transaction Modal -->
+    <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 transition-all duration-300">
+        <div class="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300" id="formModalContent">
+            <!-- Modal Header -->
+            <div class="bg-white px-6 py-4 flex justify-between items-center border-b border-slate-100">
+                <h3 class="font-bold text-slate-800">Tambah Transaksi</h3>
+                <button onclick="window.closeModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- Form -->
+            <form id="transactionForm" onsubmit="window.saveTransaction(event)" class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Jenis</label>
+                        <select id="type" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                            <option value="MASUK">Pemasukan</option>
+                            <option value="KELUAR" selected>Pengeluaran</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Semester</label>
+                        <select id="semester" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3">Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Tanggal</label>
+                        <input type="date" id="date" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Kategori</label>
+                        <select id="category" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                            <option value="Living Cost">Living Cost</option>
+                            <option value="Biaya UKT">Biaya UKT</option>
+                            <option value="Buku">Buku</option>
+                            <option value="Beasiswa KIP">Beasiswa KIP</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Nominal (Rp)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-2.5 text-slate-400 font-medium text-sm">Rp</span>
+                        <!-- Tipe text agar bisa membaca format titik ribuan -->
+                        <input type="text" id="amount" required placeholder="50.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Keterangan (Opsional)</label>
+                    <input type="text" id="note" placeholder="Cth: Bayar kos, beli buku web..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Bukti (Opsional)</label>
+                    <input type="file" id="fileProof" accept="image/*,application/pdf" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100 cursor-pointer transition-colors border border-dashed border-slate-200 rounded-xl p-2 bg-slate-50/50">
+                </div>
+                
+                <div class="pt-2">
+                    <button id="saveBtn" type="submit" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold shadow-md shadow-brand-500/30 transition-all active:scale-[0.98]">
+                        Simpan Transaksi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- File Viewer Modal -->
+    <div id="viewerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity">
+        <div class="bg-transparent w-full max-w-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-end mb-4">
+                <button onclick="window.closeViewer()" class="bg-white/20 hover:bg-white/30 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="flex-grow overflow-auto flex items-center justify-center rounded-2xl" id="viewerContent"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="messageBox" class="fixed top-5 left-1/2 -translate-x-1/2 z-[70] transform transition-all duration-300 -translate-y-24 opacity-0">
+        <div class="bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i class="fa-solid fa-check text-[10px]"></i>
+            </div>
+            <span id="messageText" class="font-medium tracking-wide"></span>
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULE SCRIPT -->
+    <script type="module">
+        // Import Firebase modules v12.19.0
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase dari akun Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHQ9vykMBuWq3oW7nVbZ7hYHt5IEqUJuc",
+            authDomain: "kip-iqbal-al-mubarok.firebaseapp.com",
+            projectId: "kip-iqbal-al-mubarok",
+            storageBucket: "kip-iqbal-al-mubarok.firebasestorage.app",
+            messagingSenderId: "752390553303",
+            appId: "1:752390553303:web:40dbd3b253d84c8321ba92",
+            measurementId: "G-777JPEKK1R"
+        };
+
+        // Initialize Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // State Management
+        let transactions = [];
+        let dailyChart = null;
+        let ratioChart = null;
+
+        // Fetch Data from Firestore Real-time
+        const q = query(collection(db, "transactions"));
+        onSnapshot(q, (snapshot) => {
+            transactions = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            window.renderApp();
+        }, (error) => {
+            console.error("Gagal memuat data dari Firebase: ", error);
+        });
+
+        // Utilities Format Rupiah dengan Titik
+        const formatRp = (amount) => {
+            return 'Rp ' + Number(amount).toLocaleString('id-ID');
+        };
+
+        // Otomatis format input nominal (tambah titik saat diketik)
+        const amountInput = document.getElementById('amount');
+        amountInput.addEventListener('input', function(e) {
+            // Hapus karakter selain angka
+            let value = this.value.replace(/[^0-9]/g, '');
+            if (value !== '') {
+                // Tambahkan format titik IDR
+                this.value = parseInt(value, 10).toLocaleString('id-ID');
+            } else {
+                this.value = '';
+            }
+        });
+
+        window.showMessage = (msg) => {
+            const box = document.getElementById('messageBox');
+            document.getElementById('messageText').innerText = msg;
+            box.classList.remove('-translate-y-24', 'opacity-0');
+            box.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                box.classList.remove('translate-y-0', 'opacity-100');
+                box.classList.add('-translate-y-24', 'opacity-0');
+            }, 3000);
+        };
+
+        // Modal Handlers
+        const modal = document.getElementById('formModal');
+        const modalContent = document.getElementById('formModalContent');
+        
+        window.openModal = () => {
+            document.getElementById('transactionForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                if(window.innerWidth < 768) {
+                    modalContent.classList.remove('translate-y-full');
+                } else {
+                    modalContent.classList.remove('scale-95');
+                }
+            }, 10);
+        }
+
+        window.closeModal = () => {
+            modal.classList.add('opacity-0');
+            if(window.innerWidth < 768) {
+                modalContent.classList.add('translate-y-full');
+            } else {
+                modalContent.classList.add('scale-95');
+            }
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Save Transaction to Firebase
+        window.saveTransaction = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
+            
+            const type = document.getElementById('type').value;
+            const semester = document.getElementById('semester').value;
+            const date = document.getElementById('date').value;
+            const category = document.getElementById('category').value;
+            
+            // Hilangkan titik dari format nominal sebelum disimpan ke database
+            const rawAmount = document.getElementById('amount').value.replace(/\./g, '');
+            const amount = parseFloat(rawAmount);
+            
+            const note = document.getElementById('note').value;
+            const fileInput = document.getElementById('fileProof');
+
+            const newTx = { type, semester, date, category, amount, note, file: null, fileName: null };
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    newTx.file = event.target.result;
+                    newTx.fileName = file.name;
+                    await processSave(newTx, btn);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                await processSave(newTx, btn);
+            }
+        }
+
+        async function processSave(tx, btn) {
+            try {
+                await addDoc(collection(db, "transactions"), tx);
+                window.closeModal();
+                window.showMessage('Transaksi berhasil disimpan!');
+            } catch (err) {
+                console.error("Error adding document: ", err);
+                alert('Gagal menyimpan ke database. Cek aturan keamanan (Rules) Firestore Anda.');
+            } finally {
+                btn.innerText = "Simpan Transaksi";
+                btn.disabled = false;
+            }
+        }
+
+        // Delete Transaction from Firebase
+        window.deleteTx = async (id) => {
+            if(confirm("Hapus transaksi ini?")) {
+                try {
+                    await deleteDoc(doc(db, "transactions", id));
+                    window.showMessage('Data dihapus');
+                } catch (err) {
+                    console.error("Error deleting document: ", err);
+                    alert("Gagal menghapus data.");
+                }
+            }
+        }
+
+        // File Viewer
+        const vModal = document.getElementById('viewerModal');
+        window.viewFile = (id) => {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx || !tx.file) return;
+
+            const content = document.getElementById('viewerContent');
+            if (tx.file.startsWith('data:image')) {
+                content.innerHTML = `<img src="${tx.file}" class="max-w-full max-h-full object-contain rounded-xl" alt="Bukti">`;
+            } else if (tx.file.startsWith('data:application/pdf')) {
+                content.innerHTML = `<iframe src="${tx.file}" class="w-full h-[70vh] rounded-xl bg-white"></iframe>`;
+            }
+            
+            vModal.classList.remove('hidden');
+            setTimeout(() => vModal.classList.remove('opacity-0'), 10);
+        }
+
+        window.closeViewer = () => {
+            vModal.classList.add('opacity-0');
+            setTimeout(() => vModal.classList.add('hidden'), 300);
+        }
+
+        // Core Render Engine
+        window.renderApp = () => {
+            const filterSem = document.getElementById('filterSemester').value;
+            let filteredTx = transactions;
+
+            if (filterSem !== 'ALL') {
+                filteredTx = transactions.filter(t => t.semester === filterSem);
+            }
+
+            // Sort by date descending
+            filteredTx.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            renderStats(filteredTx);
+            renderTable(filteredTx);
+            renderCharts(filteredTx);
+        }
+
+        function renderStats(data) {
+            let masuk = 0;
+            let keluar = 0;
+            let rKip = 0, rUkt = 0, rLiving = 0, rBuku = 0;
+
+            data.forEach(t => {
+                if (t.type === 'MASUK') masuk += t.amount;
+                if (t.type === 'KELUAR') keluar += t.amount;
+                
+                if (t.category === 'Beasiswa KIP') rKip += t.amount;
+                if (t.category === 'Biaya UKT') rUkt += t.amount;
+                if (t.category === 'Living Cost') rLiving += t.amount;
+                if (t.category === 'Buku') rBuku += t.amount;
+            });
+
+            document.getElementById('totalIncome').innerText = formatRp(masuk);
+            document.getElementById('totalExpense').innerText = formatRp(keluar);
+            document.getElementById('totalBalance').innerText = formatRp(masuk - keluar);
+            
+            document.getElementById('rekapKip').innerText = formatRp(rKip);
+            document.getElementById('rekapUkt').innerText = formatRp(rUkt);
+            document.getElementById('rekapLiving').innerText = formatRp(rLiving);
+            document.getElementById('rekapBuku').innerText = formatRp(rBuku);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const mobileList = document.getElementById('mobileTxList');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+            mobileList.innerHTML = '';
+            
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            data.forEach(t => {
+                const isMasuk = t.type === 'MASUK';
+                const dateObj = new Date(t.date);
+                const dateStr = !isNaN(dateObj) ? dateObj.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}) : t.date;
+                const dateStrMobile = !isNaN(dateObj) ? dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : t.date;
+
+                const icon = isMasuk ? '<i class="fa-solid fa-arrow-down text-emerald-500"></i>' : '<i class="fa-solid fa-arrow-up text-rose-500"></i>';
+                const colorAmount = isMasuk ? 'text-emerald-600' : 'text-slate-800';
+
+                const fileBtnDesk = t.file ? 
+                    `<button onclick="window.viewFile('${t.id}')" class="text-brand-500 hover:text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors inline-flex items-center gap-1.5"><i class="fa-solid fa-image"></i> Lihat</button>` : 
+                    `<span class="text-slate-300 text-xs">-</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3 px-5 whitespace-nowrap">
+                        <p class="text-slate-700 font-medium">${dateStr}</p>
+                        <p class="text-[10px] text-slate-400">Smst ${t.semester}</p>
+                    </td>
+                    <td class="py-3 px-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full ${isMasuk ? 'bg-emerald-50' : 'bg-rose-50'} flex items-center justify-center text-[10px]">
+                                ${icon}
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">${t.category}</p>
+                                ${t.note ? `<p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1">${t.note}</p>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-5 whitespace-nowrap text-right font-bold ${colorAmount}">
+                        ${isMasuk ? '+' : '-'}${formatRp(t.amount)}
+                    </td>
+                    <td class="py-3 px-5 whitespace-nowrap text-center">
+                        ${fileBtnDesk}
+                    </td>
+                    <td class="py-3 px-5 whitespace-nowrap text-right">
+                        <button onclick="window.deleteTx('${t.id}')" class="text-slate-400 hover:text-rose-500 transition-colors p-2 text-sm">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                const fileIconMob = t.file ? `<button onclick="window.viewFile('${t.id}')" class="text-brand-500 bg-brand-50 w-7 h-7 rounded-full flex items-center justify-center text-[10px]"><i class="fa-solid fa-paperclip"></i></button>` : '';
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3';
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 flex-grow overflow-hidden">
+                        <div class="w-10 h-10 shrink-0 rounded-2xl ${isMasuk ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'} flex items-center justify-center text-sm">
+                            ${icon}
+                        </div>
+                        <div class="overflow-hidden">
+                            <h4 class="font-bold text-slate-800 text-sm truncate">${t.category}</h4>
+                            <p class="text-[11px] text-slate-500 truncate">${dateStrMobile} • Smst ${t.semester}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end shrink-0">
+                        <span class="font-bold text-sm ${colorAmount}">${isMasuk ? '+' : '-'}${formatRp(t.amount)}</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            ${fileIconMob}
+                            <button onclick="window.deleteTx('${t.id}')" class="text-slate-300 hover:text-rose-500 w-7 h-7 flex items-center justify-center text-[10px]">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                mobileList.appendChild(card);
+            });
+        }
+
+        function renderCharts(data) {
+            const expenseData = {};
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            data.forEach(t => {
+                if (t.type === 'KELUAR') {
+                    totalKeluar += t.amount;
+                    expenseData[t.date] = (expenseData[t.date] || 0) + t.amount;
+                } else if (t.type === 'MASUK') {
+                    totalMasuk += t.amount;
+                }
+            });
+
+            const sortedDates = Object.keys(expenseData).sort();
+            const dateLabels = sortedDates.map(d => {
+                const dateObj = new Date(d);
+                return !isNaN(dateObj) ? dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : d;
+            });
+            const dailyAmounts = sortedDates.map(d => expenseData[d]);
+
+            const ctxDaily = document.getElementById('dailyExpenseChart').getContext('2d');
+            if (dailyChart) dailyChart.destroy();
+            
+            let gradient = ctxDaily.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(2, 132, 199, 0.2)');
+            gradient.addColorStop(1, 'rgba(2, 132, 199, 0)');
+
+            dailyChart = new Chart(ctxDaily, {
+                type: 'line',
+                data: {
+                    labels: dateLabels.length ? dateLabels : ['-'],
+                    datasets: [{
+                        label: 'Pengeluaran (Rp)',
+                        data: dailyAmounts.length ? dailyAmounts : [0],
+                        borderColor: '#0284c7',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0284c7',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            border: { display: false },
+                            grid: { color: '#f1f5f9', drawTicks: false },
+                            ticks: {
+                                callback: val => (val/1000) + 'k',
+                                font: { size: 10, family: 'Plus Jakarta Sans' }, color: '#94a3b8'
+                            }
+                        },
+                        x: {
+                            border: { display: false },
+                            grid: { display: false },
+                            ticks: { font: { size: 10, family: 'Plus Jakarta Sans' }, color: '#94a3b8', maxTicksLimit: 5 }
+                        }
+                    }
+                }
+            });
+
+            const ctxRatio = document.getElementById('ratioChart').getContext('2d');
+            if (ratioChart) ratioChart.destroy();
+
+            const pieData = (totalMasuk === 0 && totalKeluar === 0) ? [1] : [totalMasuk, totalKeluar];
+            const pieBg = (totalMasuk === 0 && totalKeluar === 0) ? ['#f1f5f9'] : ['#10b981', '#f43f5e'];
+            const pieLabels = (totalMasuk === 0 && totalKeluar === 0) ? ['Kosong'] : ['Masuk', 'Keluar'];
+
+            ratioChart = new Chart(ctxRatio, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: pieBg,
+                        borderWidth: 0,
+                        hoverOffset: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' }, color: '#64748b' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    if(totalMasuk === 0 && totalKeluar === 0) return ' 0';
+                                    return ` ${ctx.label}: ${formatRp(ctx.raw)}`;
+                                }
+                            },
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: 'Plus Jakarta Sans' },
+                            bodyFont: { family: 'Plus Jakarta Sans' },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
