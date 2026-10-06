@@ -190,12 +190,12 @@
         <i class="fa-solid fa-plus"></i>
     </button>
 
-    <!-- Add Transaction Modal -->
+    <!-- Add/Edit Transaction Modal -->
     <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 transition-all duration-300">
         <div class="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300" id="formModalContent">
             <!-- Modal Header -->
             <div class="bg-white px-6 py-4 flex justify-between items-center border-b border-slate-100">
-                <h3 class="font-bold text-slate-800">Tambah Transaksi</h3>
+                <h3 id="modalTitle" class="font-bold text-slate-800">Tambah Transaksi</h3>
                 <button onclick="window.closeModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -247,7 +247,6 @@
                     <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Nominal (Rp)</label>
                     <div class="relative">
                         <span class="absolute left-4 top-2.5 text-slate-400 font-medium text-sm">Rp</span>
-                        <!-- Tipe text agar bisa membaca format titik ribuan -->
                         <input type="text" id="amount" required placeholder="50.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all">
                     </div>
                 </div>
@@ -260,6 +259,7 @@
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Bukti (Opsional)</label>
                     <input type="file" id="fileProof" accept="image/*,application/pdf" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100 cursor-pointer transition-colors border border-dashed border-slate-200 rounded-xl p-2 bg-slate-50/50">
+                    <p class="text-[10px] text-slate-400 mt-1" id="fileEditNote"></p>
                 </div>
                 
                 <div class="pt-2">
@@ -274,7 +274,10 @@
     <!-- File Viewer Modal -->
     <div id="viewerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity">
         <div class="bg-transparent w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-end mb-4">
+            <div class="flex justify-end mb-4 gap-3">
+                <button id="downloadFileBtn" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm font-semibold hidden">
+                    <i class="fa-solid fa-download"></i> Unduh
+                </button>
                 <button onclick="window.closeViewer()" class="bg-white/20 hover:bg-white/30 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
@@ -295,10 +298,10 @@
 
     <!-- FIREBASE MODULE SCRIPT -->
     <script type="module">
-        // Import Firebase modules v12.19.0
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        // Import updateDoc for edit functionality
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
         // Konfigurasi Firebase dari akun Anda
         const firebaseConfig = {
@@ -320,6 +323,9 @@
         let transactions = [];
         let dailyChart = null;
         let ratioChart = null;
+        
+        // Global state for editing
+        window.editingId = null;
 
         // Fetch Data from Firestore Real-time
         const q = query(collection(db, "transactions"));
@@ -341,10 +347,8 @@
         // Otomatis format input nominal (tambah titik saat diketik)
         const amountInput = document.getElementById('amount');
         amountInput.addEventListener('input', function(e) {
-            // Hapus karakter selain angka
             let value = this.value.replace(/[^0-9]/g, '');
             if (value !== '') {
-                // Tambahkan format titik IDR
                 this.value = parseInt(value, 10).toLocaleString('id-ID');
             } else {
                 this.value = '';
@@ -367,8 +371,13 @@
         const modalContent = document.getElementById('formModalContent');
         
         window.openModal = () => {
+            window.editingId = null; // Reset edit state
             document.getElementById('transactionForm').reset();
             document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('modalTitle').innerText = "Tambah Transaksi";
+            document.getElementById('saveBtn').innerText = "Simpan Transaksi";
+            document.getElementById('fileEditNote').innerText = "";
+            
             modal.classList.remove('hidden');
             
             setTimeout(() => {
@@ -390,13 +399,51 @@
             }
             setTimeout(() => {
                 modal.classList.add('hidden');
+                document.getElementById('transactionForm').reset();
             }, 300);
+        }
+
+        window.editTx = (id) => {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            window.editingId = id; // Set edit state
+
+            // Populate form
+            document.getElementById('type').value = tx.type;
+            document.getElementById('semester').value = tx.semester;
+            document.getElementById('date').value = tx.date;
+            document.getElementById('category').value = tx.category;
+            
+            // Format amount mapping back to UI
+            document.getElementById('amount').value = parseInt(tx.amount, 10).toLocaleString('id-ID');
+            document.getElementById('note').value = tx.note || '';
+
+            // Reset file input and add note
+            document.getElementById('fileProof').value = '';
+            document.getElementById('fileEditNote').innerText = tx.file ? "*Kosongkan jika tidak ingin mengganti bukti." : "";
+
+            // Change UI text
+            document.getElementById('modalTitle').innerText = "Edit Transaksi";
+            document.getElementById('saveBtn').innerText = "Update Transaksi";
+
+            // Open modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                if(window.innerWidth < 768) {
+                    modalContent.classList.remove('translate-y-full');
+                } else {
+                    modalContent.classList.remove('scale-95');
+                }
+            }, 10);
         }
 
         // Save Transaction to Firebase
         window.saveTransaction = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
+            const originalBtnText = btn.innerText;
             btn.innerText = "Menyimpan...";
             btn.disabled = true;
             
@@ -405,39 +452,53 @@
             const date = document.getElementById('date').value;
             const category = document.getElementById('category').value;
             
-            // Hilangkan titik dari format nominal sebelum disimpan ke database
+            // Hilangkan titik dari format nominal sebelum disimpan
             const rawAmount = document.getElementById('amount').value.replace(/\./g, '');
             const amount = parseFloat(rawAmount);
             
             const note = document.getElementById('note').value;
             const fileInput = document.getElementById('fileProof');
 
-            const newTx = { type, semester, date, category, amount, note, file: null, fileName: null };
+            let txData = { type, semester, date, category, amount, note };
+
+            // If not editing, initialize file fields to null. 
+            // If editing, we keep the old ones in DB if no new file is uploaded.
+            if (!window.editingId) {
+                txData.file = null;
+                txData.fileName = null;
+            }
 
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const reader = new FileReader();
                 reader.onload = async function(event) {
-                    newTx.file = event.target.result;
-                    newTx.fileName = file.name;
-                    await processSave(newTx, btn);
+                    txData.file = event.target.result;
+                    txData.fileName = file.name;
+                    await processSave(txData, btn, originalBtnText);
                 };
                 reader.readAsDataURL(file);
             } else {
-                await processSave(newTx, btn);
+                await processSave(txData, btn, originalBtnText);
             }
         }
 
-        async function processSave(tx, btn) {
+        async function processSave(tx, btn, originalText) {
             try {
-                await addDoc(collection(db, "transactions"), tx);
+                if (window.editingId) {
+                    // Update existing
+                    await updateDoc(doc(db, "transactions", window.editingId), tx);
+                    window.showMessage('Transaksi berhasil diperbarui!');
+                } else {
+                    // Create new
+                    await addDoc(collection(db, "transactions"), tx);
+                    window.showMessage('Transaksi berhasil disimpan!');
+                }
                 window.closeModal();
-                window.showMessage('Transaksi berhasil disimpan!');
             } catch (err) {
-                console.error("Error adding document: ", err);
+                console.error("Error saving document: ", err);
                 alert('Gagal menyimpan ke database. Cek aturan keamanan (Rules) Firestore Anda.');
             } finally {
-                btn.innerText = "Simpan Transaksi";
+                btn.innerText = originalText;
                 btn.disabled = false;
             }
         }
@@ -468,6 +529,20 @@
                 content.innerHTML = `<iframe src="${tx.file}" class="w-full h-[70vh] rounded-xl bg-white"></iframe>`;
             }
             
+            // Setup Download Action
+            const downloadBtn = document.getElementById('downloadFileBtn');
+            if (downloadBtn) {
+                downloadBtn.classList.remove('hidden');
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = tx.file;
+                    a.download = tx.fileName || 'bukti_transaksi';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+            }
+
             vModal.classList.remove('hidden');
             setTimeout(() => vModal.classList.remove('opacity-0'), 10);
         }
@@ -574,6 +649,9 @@
                         ${fileBtnDesk}
                     </td>
                     <td class="py-3 px-5 whitespace-nowrap text-right">
+                        <button onclick="window.editTx('${t.id}')" class="text-slate-400 hover:text-brand-500 transition-colors p-2 text-sm mr-1">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
                         <button onclick="window.deleteTx('${t.id}')" class="text-slate-400 hover:text-rose-500 transition-colors p-2 text-sm">
                             <i class="fa-regular fa-trash-can"></i>
                         </button>
@@ -581,7 +659,7 @@
                 `;
                 tbody.appendChild(tr);
 
-                const fileIconMob = t.file ? `<button onclick="window.viewFile('${t.id}')" class="text-brand-500 bg-brand-50 w-7 h-7 rounded-full flex items-center justify-center text-[10px]"><i class="fa-solid fa-paperclip"></i></button>` : '';
+                const fileIconMob = t.file ? `<button onclick="window.viewFile('${t.id}')" class="text-brand-500 bg-brand-50 w-7 h-7 rounded-full flex items-center justify-center text-[10px] mr-1"><i class="fa-solid fa-paperclip"></i></button>` : '';
                 
                 const card = document.createElement('div');
                 card.className = 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3';
@@ -597,8 +675,11 @@
                     </div>
                     <div class="flex flex-col items-end shrink-0">
                         <span class="font-bold text-sm ${colorAmount}">${isMasuk ? '+' : '-'}${formatRp(t.amount)}</span>
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center gap-1 mt-1">
                             ${fileIconMob}
+                            <button onclick="window.editTx('${t.id}')" class="text-slate-300 hover:text-brand-500 w-7 h-7 flex items-center justify-center text-[10px]">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
                             <button onclick="window.deleteTx('${t.id}')" class="text-slate-300 hover:text-rose-500 w-7 h-7 flex items-center justify-center text-[10px]">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
